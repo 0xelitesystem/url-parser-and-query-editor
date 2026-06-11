@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>URL Parser and Query Editor</title>
+<style>
+:root {
+  --bg: #fafaf6;
+  --surface: #ffffff;
+  --ink: #0a1d1e;
+  --ink-soft: #2c4a4c;
+  --rule: #c8d4d3;
+  --teal: #0f5c60;
+  --teal-deep: #0a4548;
+  --gold: #b07d2a;
+  --gold-deep: #8a611f;
+  --ok: #1a5c2e;
+  --warn: #8a5a00;
+  --err: #8b1a1a;
+  --code-bg: #f0ebe1;
+}
+[data-theme="dark"] {
+  --bg: #0c1c1d;
+  --surface: #14292a;
+  --ink: #e8ebe6;
+  --ink-soft: #b0c0bd;
+  --rule: #2a4042;
+  --teal: #4ab4ba;
+  --teal-deep: #6dc8ce;
+  --gold: #d4a155;
+  --gold-deep: #e6b876;
+  --ok: #6dd380;
+  --warn: #d4a155;
+  --err: #e88080;
+  --code-bg: #0a1718;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  background: var(--bg); color: var(--ink); min-height: 100vh;
+  padding: 2rem 1rem; line-height: 1.55;
+}
+.wrap { max-width: 1100px; margin: 0 auto; }
+header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  border-bottom: 2px solid var(--teal); padding-bottom: 1rem; margin-bottom: 2rem;
+}
+h1 { font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; color: var(--teal); }
+.tag {
+  font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.75rem;
+  color: var(--gold-deep); letter-spacing: 0.04em; text-transform: uppercase;
+}
+[data-theme="dark"] .tag { color: var(--gold); }
+.theme-btn {
+  background: transparent; border: 1px solid var(--rule); color: var(--ink-soft);
+  padding: 0.4rem 0.85rem; font-size: 0.8rem; font-family: inherit; cursor: pointer; border-radius: 2px;
+}
+.theme-btn:hover { border-color: var(--teal); color: var(--teal); }
+.lede { font-size: 0.95rem; color: var(--ink-soft); margin-bottom: 1.75rem; max-width: 60ch; }
+.section {
+  background: var(--surface); border: 1px solid var(--rule);
+  padding: 1.25rem; margin-bottom: 1.25rem; border-radius: 3px;
+}
+.section-title { font-size: 0.9rem; font-weight: 600; letter-spacing: 0.02em; margin-bottom: 0.85rem; }
+label {
+  font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--ink-soft); display: block; margin-bottom: 0.5rem;
+}
+textarea, input[type="text"] {
+  width: 100%; background: var(--code-bg); border: 1px solid var(--rule);
+  color: var(--ink); padding: 0.7rem 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.85rem;
+  border-radius: 2px; resize: vertical;
+}
+textarea { min-height: 70px; line-height: 1.55; }
+textarea:focus, input[type="text"]:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+.input-row { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; }
+button {
+  font-family: inherit; font-size: 0.85rem; padding: 0.6rem 1.1rem;
+  border: 1px solid var(--rule); background: var(--surface); color: var(--ink);
+  cursor: pointer; border-radius: 2px;
+}
+button:hover { border-color: var(--teal); }
+button.primary { background: var(--teal); border-color: var(--teal); color: var(--surface); font-weight: 600; }
+[data-theme="dark"] button.primary { color: var(--bg) !important; }
+button.primary:hover { background: var(--teal-deep); border-color: var(--teal-deep); }
+.parts {
+  display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1.25rem;
+  font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.85rem;
+}
+.part-key { color: var(--ink-soft); }
+.part-val { color: var(--ink); word-break: break-all; }
+.part-val.empty { color: var(--ink-soft); font-style: italic; }
+table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+th {
+  text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--ink-soft); padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--rule);
+}
+td { padding: 0.4rem 0.5rem; vertical-align: middle; }
+td.actions { width: 1%; white-space: nowrap; }
+.qkey, .qval {
+  width: 100%; background: var(--code-bg); border: 1px solid var(--rule);
+  color: var(--ink); padding: 0.5rem 0.6rem;
+  font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.82rem; border-radius: 2px;
+}
+.qkey:focus, .qval:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+button.del {
+  font-size: 0.8rem; padding: 0.4rem 0.7rem; border: 1px solid var(--rule);
+  background: var(--surface); color: var(--err); cursor: pointer; border-radius: 2px;
+}
+button.del:hover { border-color: var(--err); }
+.empty-note { font-size: 0.82rem; color: var(--ink-soft); font-style: italic; padding: 0.5rem 0; }
+.output-box {
+  background: var(--code-bg); padding: 0.85rem; border-radius: 2px;
+  font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.85rem;
+  line-height: 1.6; word-break: break-all; margin-bottom: 0.85rem; min-height: 2.5rem;
+}
+.error-msg {
+  color: var(--err); font-size: 0.85rem; margin-top: 0.85rem; padding: 0.65rem;
+  background: var(--code-bg); border-left: 3px solid var(--err); border-radius: 2px;
+}
+.privacy-note { font-size: 0.78rem; color: var(--gold-deep); margin-top: 0.85rem; }
+[data-theme="dark"] .privacy-note { color: var(--gold); }
+button.copy.done { border-color: var(--ok); color: var(--ok); }
+footer {
+  margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--rule);
+  font-size: 0.78rem; color: var(--ink-soft);
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.85rem;
+}
+footer a { color: var(--teal); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+.results { display: none; }
+.results.show { display: block; }
+@media (max-width: 640px) {
+  body { padding: 1rem 0.75rem; }
+  h1 { font-size: 1.4rem; }
+  .parts { grid-template-columns: 1fr; gap: 0.15rem 0; }
+  .part-key { margin-top: 0.5rem; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>URL Parser and Query Editor</h1>
+    <div class="tag">Break apart and rebuild URLs in your browser</div>
+  </div>
+  <button class="theme-btn" id="theme-toggle" type="button">Dark</button>
+</header>
+
+<p class="lede">Paste a URL to split it into protocol, host, port, path, query, and hash. Edit the query parameters in a table, add or remove rows, and the rebuilt URL updates live. Nothing leaves this page.</p>
+
+<div class="section">
+  <label for="url-input">URL</label>
+  <input type="text" id="url-input" spellcheck="false" autocapitalize="off" autocorrect="off"
+    placeholder="https://example.com:8080/path/to/page?q=hello&lang=en&page=2#section">
+  <div class="input-row">
+    <button class="primary" id="parse-btn" type="button">Parse</button>
+    <button id="sample-btn" type="button">Load sample</button>
+    <button id="clear-btn" type="button">Clear</button>
+  </div>
+  <div class="privacy-note">All parsing happens locally. The URL is never sent to any server.</div>
+</div>
+
+<div id="error-box"></div>
+
+<div class="results" id="results">
+  <div class="section">
+    <div class="section-title">Parts</div>
+    <div class="parts" id="parts"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Query parameters</div>
+    <table id="param-table">
+      <thead>
+        <tr><th>Key</th><th>Value</th><th></th></tr>
+      </thead>
+      <tbody id="param-body"></tbody>
+    </table>
+    <div class="empty-note" id="empty-note" style="display:none;">No query parameters. Add one below.</div>
+    <div class="input-row">
+      <button id="add-param" type="button">Add parameter</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Rebuilt URL</div>
+    <div class="output-box" id="rebuilt"></div>
+    <div class="input-row">
+      <button class="primary copy" id="copy-btn" type="button">Copy URL</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>URL Parser and Query Editor. Open source, MIT licensed. <a href="https://github.com/0xelitesystem/url-parser-and-query-editor" target="_blank" rel="noopener">View source</a>.</div>
+  <div>For debugging links and APIs.</div>
+</footer>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+const themeBtn = $("theme-toggle");
+function setTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  themeBtn.textContent = t === "dark" ? "Light" : "Dark";
+}
+themeBtn.addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme") || "light";
+  setTheme(cur === "dark" ? "light" : "dark");
+});
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// Current parsed state
+let state = null; // { protocol, host, port, pathname, hash, params: [[k,v], ...] }
+
+function showError(msg) {
+  $("error-box").innerHTML = `<div class="error-msg">${escapeHtml(msg)}</div>`;
+  $("results").classList.remove("show");
+}
+
+function parse() {
+  $("error-box").innerHTML = "";
+  const raw = $("url-input").value.trim();
+  if (!raw) { showError("Paste a URL to parse."); return; }
+
+  let u;
+  try {
+    u = new URL(raw);
+  } catch (e) {
+    // Try prepending https:// for inputs like example.com/path
+    try {
+      u = new URL("https://" + raw);
+    } catch (e2) {
+      showError("Could not parse this as a URL. Include a scheme like https:// or a valid host.");
+      return;
+    }
+  }
+
+  const params = [];
+  // Preserve order and duplicates
+  for (const [k, v] of u.searchParams.entries()) {
+    params.push([k, v]);
+  }
+
+  state = {
+    protocol: u.protocol.replace(/:$/, ""),
+    host: u.hostname,
+    port: u.port,
+    pathname: u.pathname,
+    hash: u.hash.replace(/^#/, ""),
+    params: params,
+  };
+
+  renderParts();
+  renderParams();
+  rebuild();
+  $("results").classList.add("show");
+}
+
+function renderParts() {
+  const rows = [
+    ["Protocol", state.protocol],
+    ["Host", state.host],
+    ["Port", state.port],
+    ["Path", state.pathname],
+    ["Query", state.params.map(([k, v]) => v === "" ? k : k + "=" + v).join("&")],
+    ["Hash", state.hash],
+  ];
+  const el = $("parts");
+  el.innerHTML = "";
+  for (const [k, v] of rows) {
+    const key = document.createElement("div");
+    key.className = "part-key";
+    key.textContent = k;
+    const val = document.createElement("div");
+    if (v === "" || v === undefined) {
+      val.className = "part-val empty";
+      val.textContent = "(none)";
+    } else {
+      val.className = "part-val";
+      val.textContent = v;
+    }
+    el.appendChild(key);
+    el.appendChild(val);
+  }
+}
+
+function renderParams() {
+  const body = $("param-body");
+  body.innerHTML = "";
+  state.params.forEach((pair, idx) => {
+    const tr = document.createElement("tr");
+
+    const tdK = document.createElement("td");
+    const inK = document.createElement("input");
+    inK.type = "text";
+    inK.className = "qkey";
+    inK.value = pair[0];
+    inK.spellcheck = false;
+    inK.addEventListener("input", () => { state.params[idx][0] = inK.value; rebuild(); refreshQueryPart(); });
+    tdK.appendChild(inK);
+
+    const tdV = document.createElement("td");
+    const inV = document.createElement("input");
+    inV.type = "text";
+    inV.className = "qval";
+    inV.value = pair[1];
+    inV.spellcheck = false;
+    inV.addEventListener("input", () => { state.params[idx][1] = inV.value; rebuild(); refreshQueryPart(); });
+    tdV.appendChild(inV);
+
+    const tdA = document.createElement("td");
+    tdA.className = "actions";
+    const del = document.createElement("button");
+    del.className = "del";
+    del.type = "button";
+    del.textContent = "Remove";
+    del.addEventListener("click", () => {
+      state.params.splice(idx, 1);
+      renderParams();
+      rebuild();
+      refreshQueryPart();
+    });
+    tdA.appendChild(del);
+
+    tr.appendChild(tdK);
+    tr.appendChild(tdV);
+    tr.appendChild(tdA);
+    body.appendChild(tr);
+  });
+  $("empty-note").style.display = state.params.length === 0 ? "block" : "none";
+}
+
+function refreshQueryPart() {
+  // Update just the Query row in the parts list without rebuilding the whole table
+  const el = $("parts");
+  // Parts order: index 4 is Query value (each row has key+val, so val index = 4*2+1 = 9)
+  const queryVal = state.params.map(([k, v]) => v === "" ? k : k + "=" + v).join("&");
+  const valNodes = el.querySelectorAll(".part-val");
+  if (valNodes[4]) {
+    if (queryVal === "") {
+      valNodes[4].className = "part-val empty";
+      valNodes[4].textContent = "(none)";
+    } else {
+      valNodes[4].className = "part-val";
+      valNodes[4].textContent = queryVal;
+    }
+  }
+}
+
+function buildQueryString() {
+  const parts = [];
+  for (const [k, v] of state.params) {
+    if (k === "" && v === "") continue;
+    const ek = encodeURIComponent(k);
+    if (v === "") parts.push(ek);
+    else parts.push(ek + "=" + encodeURIComponent(v));
+  }
+  return parts.join("&");
+}
+
+function rebuild() {
+  if (!state) return;
+  let url = "";
+  if (state.protocol) url += state.protocol + "://";
+  url += state.host;
+  if (state.port) url += ":" + state.port;
+  url += state.pathname || "";
+  const qs = buildQueryString();
+  if (qs) url += "?" + qs;
+  if (state.hash) url += "#" + state.hash;
+  $("rebuilt").textContent = url;
+}
+
+$("add-param").addEventListener("click", () => {
+  if (!state) return;
+  state.params.push(["", ""]);
+  renderParams();
+  rebuild();
+  refreshQueryPart();
+});
+
+$("parse-btn").addEventListener("click", parse);
+
+$("sample-btn").addEventListener("click", () => {
+  $("url-input").value = "https://shop.example.com:8443/products/list?category=books&sort=price&page=2&q=open%20source#reviews";
+  parse();
+});
+
+$("clear-btn").addEventListener("click", () => {
+  $("url-input").value = "";
+  $("results").classList.remove("show");
+  $("error-box").innerHTML = "";
+  state = null;
+});
+
+$("url-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); parse(); }
+});
+
+$("copy-btn").addEventListener("click", async () => {
+  const text = $("rebuilt").textContent;
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (_) {}
+    document.body.removeChild(ta);
+  }
+  const btn = $("copy-btn");
+  const orig = btn.textContent;
+  btn.textContent = "Copied";
+  btn.classList.add("done");
+  setTimeout(() => { btn.textContent = orig; btn.classList.remove("done"); }, 1100);
+});
+
+const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+setTheme(prefersDark ? "dark" : "light");
+</script>
+</body>
+</html>
