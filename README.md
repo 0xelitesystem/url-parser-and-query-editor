@@ -63,5 +63,5 @@ MIT.
 ## Related
 
 - [hex-rgb-hsl-hsv-converter](https://github.com/0xelitesystem/hex-rgb-hsl-hsv-converter), convert between HEX, RGB, HSL, and HSV
-- [aspect-ratio-calculator](https://github.com/0xelitesystem/aspect-ratio-calculator), simplify dimensions to a ratio and back
-- [word-and-character-counter](https://github.com/0xelitesystem/word-and-character-counter), count words, characters, and reading time
+- [aspect-ratio-dimension-solver](https://github.com/0xelitesystem/aspect-ratio-dimension-solver), simplify dimensions to a ratio and back
+- [word-count-reading-time](https://github.com/0xelitesystem/word-count-reading-time), count words, characters, and reading time
